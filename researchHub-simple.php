@@ -73,9 +73,9 @@ if (isset($_GET['vote']) && isset($_SESSION['user'])) {
     $stmt = $db->prepare("INSERT OR IGNORE INTO votes (user_id, idea_id) VALUES (:user_id, :idea_id)");
     $stmt->bindValue(':user_id', $user_id);
     $stmt->bindValue(':idea_id', $idea_id);
-    if ($stmt->execute()) {
-        $db->exec("UPDATE ideas SET votes = votes + 1 WHERE id = $idea_id");
-    }
+if ($stmt->execute() && $db->changes() > 0) {
+    $db->exec("UPDATE ideas SET votes = votes + 1 WHERE id = $idea_id");
+}
     header("Location: ?");
     exit();
 }
@@ -125,7 +125,7 @@ $ideas = $db->query("
     <title>Open Research Hub</title>
 </head>
 <body>
-    <h1>Open Research Hub</h1>
+    <div id="bannerimage"></div>
 
     <?php if (!isset($_SESSION['user'])): ?>
         <h2>Register</h2>
@@ -198,6 +198,6 @@ $comments = $db->query("
             <?php endwhile; ?>
         </ul>
     <?php// endif; ?>
-    <a href="https://github.com/netpipe/researchHub">🕸Project Page🕸</a>
+    <a href="https://github.com/netpipe/researchHub">ðŸ•¸Project PageðŸ•¸</a>
 </body>
 </html>
