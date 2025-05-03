@@ -72,11 +72,11 @@ exit;
 // === HANDLE TOKEN GENERATION ===
 if (isset($_POST['generate_tokens']) && isset($_SESSION['admin'])) {
     $amount = (int)$_POST['amount'];
-    $pool_size = max(10000, $amount * 10);
+    $pool_size = max(10000, $amount * 2);
     $token_pool = [];
 
     while (count($token_pool) < $pool_size) {
-        $token = bin2hex(random_bytes(4));
+        $token = bin2hex(random_bytes(10));
         $token_pool[$token] = true; // ensure uniqueness
     }
 
