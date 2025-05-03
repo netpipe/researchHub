@@ -1,9 +1,11 @@
 <?php
-session_start();
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
 // === DB SETUP ===
 $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
 
 // Create tables if not exist
 $db->exec("
@@ -24,6 +26,20 @@ CREATE TABLE IF NOT EXISTS admin (
 );
 ");
 
+
+// Auto-login via cookie if valid
+if (!isset($_SESSION)) session_start();
+
+if (!isset($_SESSION['admin']) && isset($_COOKIE['admin_auth'])) {
+    $cookie_user = $_COOKIE['admin_auth'];
+
+    $stmt = $db->prepare("SELECT * FROM admin WHERE username = ?");
+    $stmt->execute([$cookie_user]);
+    if ($stmt->fetch()) {
+        $_SESSION['admin'] = $cookie_user; // Rehydrate session
+    }
+}
+
 // === Add default admin on first run ===
 $stmt = $db->query("SELECT COUNT(*) FROM admin");
 if ($stmt->fetchColumn() == 0) {
@@ -37,7 +53,9 @@ if (isset($_POST['login'])) {
     $stmt->execute([$_POST['username']]);
     $admin = $stmt->fetch();
     if ($admin && password_verify($_POST['password'], $admin['password_hash'])) {
-        $_SESSION['admin'] = $admin['username'];
+        setcookie('admin_auth', $admin['username'], time() + (86400 * 7), "/"); // 7-day login
+$_SESSION['admin'] = $admin['username'];
+
     } else {
         echo "<p style='color:red;'>Login failed</p>";
     }
@@ -45,9 +63,10 @@ if (isset($_POST['login'])) {
 
 // === HANDLE ADMIN LOGOUT ===
 if (isset($_GET['logout'])) {
-    session_destroy();
-    header("Location: index.php");
-    exit;
+setcookie('admin_auth', '', time() - 3600, "/"); // Remove cookie
+session_destroy();
+header("Location: index.php");
+exit;
 }
 
 // === HANDLE TOKEN GENERATION ===
