@@ -1,4 +1,17 @@
+<style>
+#bannerimage {
+  width: 300px;
+  background-image: url('simplevote.png');
+  height: 100px;
+  background-position: center;
+}
+body {
+  background-image: url('background.png');
+}
+</style>
+
 <?php
+$password = "admin123";
 //ini_set('display_errors', 1);
 //error_reporting(E_ALL);
 
@@ -66,7 +79,7 @@ if (!isset($_SESSION['admin']) && isset($_COOKIE['admin_auth'])) {
 $stmt = $db->query("SELECT COUNT(*) FROM admin");
 if ($stmt->fetchColumn() == 0) {
     $db->prepare("INSERT INTO admin (username, password_hash) VALUES (?, ?)")
-       ->execute(['admin', password_hash('admin123', PASSWORD_DEFAULT)]);
+       ->execute(['admin', password_hash($password, PASSWORD_DEFAULT)]);
 }
 
 // === HANDLE ADMIN LOGIN ===
@@ -133,9 +146,9 @@ if (isset($_POST['generate_tokens']) && isset($_SESSION['admin'])) {
     echo "<h3>Generated $amount Tokens</h3>";
     echo "<p><a href='generated_tokens.csv' download>Download CSV</a></p>";
     echo "<ul>";
-    foreach ($generated as $token) {
-        echo "<li>$token</li>";
-    }
+   // foreach ($generated as $token) {
+   //     echo "<li>$token</li>";
+    //}
     echo "</ul><hr>";
 }
 
@@ -182,7 +195,7 @@ $db->exec("DELETE FROM ip_attempts WHERE attempt_time < " . (time() - 86400)); /
 <html>
 <head><title>Voting App</title></head>
 <body style="font-family:sans-serif;">
-<h2>Simple Voting App</h2>
+<div id="bannerimage"></div>
 
 <?php if (isset($_SESSION['admin'])): ?>
     <p>Logged in as <strong><?=htmlspecialchars($_SESSION['admin'])?></strong> | <a href="?logout=1">Logout</a></p>
