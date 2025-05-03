@@ -268,6 +268,21 @@ foreach ($candidates as $cand):
             ?>
         </select><br><br>
         <button type="submit" name="vote">Cast Vote</button>
+        
+            
+    <ul>
+    <?php
+    //echo "<h3>Vote Stats</h3>";
+        $candidates = $db->query("SELECT * FROM candidates")->fetchAll();
+        foreach ($candidates as $cand) {
+            $stmt = $db->prepare("SELECT COUNT(*) FROM tokens WHERE voted_for = ?");
+            $stmt->execute([$cand['id']]);
+            $count = $stmt->fetchColumn();
+           // echo "<li><strong>".htmlspecialchars($cand['name'])."</strong>: $count votes</li>";
+        }
+    ?>
+    </ul>
+    
     </form>
 
     <p><a href="?admin=1">Admin Login</a></p>
