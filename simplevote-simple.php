@@ -1,6 +1,6 @@
 <?php
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+//ini_set('display_errors', 1);
+//error_reporting(E_ALL);
 
 // === DB SETUP ===
 $db = new PDO('sqlite:' . __DIR__ . '/database.sqlite');
@@ -158,19 +158,30 @@ if (isset($_POST['vote'])) {
         <input type="text" name="candidate_name" required placeholder="Candidate Name">
         <button type="submit" name="add_candidate">Add</button>
     </form>
-
-    <h3>Vote Stats</h3>
-    <ul>
-    <?php
-        $candidates = $db->query("SELECT * FROM candidates")->fetchAll();
-        foreach ($candidates as $cand) {
-            $stmt = $db->prepare("SELECT COUNT(*) FROM tokens WHERE voted_for = ?");
-            $stmt->execute([$cand['id']]);
-            $count = $stmt->fetchColumn();
-            echo "<li><strong>".htmlspecialchars($cand['name'])."</strong>: $count votes</li>";
-        }
-    ?>
-    </ul>
+    
+<h3>Candidates</h3>
+<table border="1" cellpadding="5" cellspacing="0">
+<tr>
+    <th>Name</th>
+    <th>Votes</th>
+    <th>Action</th>
+</tr>
+<?php
+$candidates = $db->query("SELECT * FROM candidates")->fetchAll();
+foreach ($candidates as $cand):
+    $stmt = $db->prepare("SELECT COUNT(*) FROM tokens WHERE voted_for = ?");
+    $stmt->execute([$cand['id']]);
+    $count = $stmt->fetchColumn();
+?>
+<tr>
+    <td><?=htmlspecialchars($cand['name'])?></td>
+    <td><?=$count?></td>
+    <td>
+        <a href="?delete_candidate=<?=$cand['id']?>" onclick="return confirm('Delete this candidate?');">🗑️</a>
+    </td>
+</tr>
+<?php endforeach; ?>
+</table>
 
 <?php elseif (!isset($_SESSION['admin']) && isset($_GET['admin'])): ?>
     <h3>Admin Login</h3>
