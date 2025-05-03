@@ -152,6 +152,11 @@ if (isset($_POST['generate_tokens']) && isset($_SESSION['admin'])) {
     echo "</ul><hr>";
 }
 
+// === Handle Clear Tokens ===
+if (isset($_POST['clear_tokens']) && isset($_SESSION['admin'])) {
+    $db->exec("DELETE FROM tokens");
+    echo "<p style='color:green;'>All tokens cleared.</p>";
+}
 
 
 // === HANDLE ADD CANDIDATE ===
@@ -235,6 +240,10 @@ foreach ($candidates as $cand):
 </tr>
 <?php endforeach; ?>
 </table>
+<h3>Danger Zone</h3>
+<form method="POST" onsubmit="return confirm('Are you sure you want to delete ALL tokens?');">
+    <button type="submit" name="clear_tokens" style="background:red;color:white;padding:8px 16px;">🗑️ Delete All Tokens</button>
+</form>
 
 <?php elseif (!isset($_SESSION['admin']) && isset($_GET['admin'])): ?>
     <h3>Admin Login</h3>
@@ -263,5 +272,6 @@ foreach ($candidates as $cand):
 
     <p><a href="?admin=1">Admin Login</a></p>
 <?php endif; ?>
+<a href="https://github.com/netpipe/researchHub">Project Page</a>
 </body>
 </html>
