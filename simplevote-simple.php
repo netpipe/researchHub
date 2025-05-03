@@ -24,7 +24,29 @@ CREATE TABLE IF NOT EXISTS admin (
     username TEXT PRIMARY KEY,
     password_hash TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS ip_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ip TEXT NOT NULL,
+    action TEXT NOT NULL, -- 'login' or 'vote'
+    attempt_time INTEGER NOT NULL
+);
 ");
+define('RATE_LIMIT_WINDOW', 300); // seconds (e.g. 5 minutes)
+define('RATE_LIMIT_MAX', 5);      // max attempts in window
+
+function too_many_attempts($db, $ip, $action) {
+    $now = time();
+    $stmt = $db->prepare("SELECT COUNT(*) FROM ip_attempts 
+                          WHERE ip = ? AND action = ? AND attempt_time > ?");
+    $stmt->execute([$ip, $action, $now - RATE_LIMIT_WINDOW]);
+    return $stmt->fetchColumn() >= RATE_LIMIT_MAX;
+}
+
+function log_attempt($db, $ip, $action) {
+    $stmt = $db->prepare("INSERT INTO ip_attempts (ip, action, attempt_time) VALUES (?, ?, ?)");
+    $stmt->execute([$ip, $action, time()]);
+}
+
 
 
 // Auto-login via cookie if valid
@@ -52,12 +74,22 @@ if (isset($_POST['login'])) {
     $stmt = $db->prepare("SELECT * FROM admin WHERE username = ?");
     $stmt->execute([$_POST['username']]);
     $admin = $stmt->fetch();
+    
+    $ip = $_SERVER['REMOTE_ADDR'];
+
+if (too_many_attempts($db, $ip, 'login')) {
+    die("Too many login attempts. Please try again later.");
+}
+$db->exec("DELETE FROM ip_attempts WHERE attempt_time < " . (time() - 86400)); // 1-day cleanup
+
+
     if ($admin && password_verify($_POST['password'], $admin['password_hash'])) {
         setcookie('admin_auth', $admin['username'], time() + (86400 * 7), "/"); // 7-day login
 $_SESSION['admin'] = $admin['username'];
 
     } else {
         echo "<p style='color:red;'>Login failed</p>";
+        log_attempt($db, $ip, 'login');
     }
 }
 
@@ -119,6 +151,13 @@ if (isset($_POST['add_candidate']) && isset($_SESSION['admin'])) {
 if (isset($_POST['vote'])) {
     $token_input = $_POST['token'];
     $candidate_id = $_POST['candidate'];
+    
+$ip = $_SERVER['REMOTE_ADDR'];
+
+if (too_many_attempts($db, $ip, 'vote')) {
+    die("<p style='color:red;'>Too many failed attempts. Try again later.</p>");
+}
+$db->exec("DELETE FROM ip_attempts WHERE attempt_time < " . (time() - 86400)); // 1-day cleanup
 
     $stmt = $db->query("SELECT * FROM tokens WHERE used = 0");
     $found = false;
@@ -133,6 +172,7 @@ if (isset($_POST['vote'])) {
     }
     if (!$found) {
         echo "<p style='color:red;'>Invalid or used token.</p>";
+        log_attempt($db, $ip, 'vote');
     }
 }
 
