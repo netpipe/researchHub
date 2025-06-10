@@ -77,8 +77,12 @@ if ($stmt->execute() && $db->changes() > 0) {
     $db->exec("UPDATE ideas SET votes = votes + 1 WHERE id = $idea_id");
 }
     header("Location: ?");
+
+
     exit();
-}
+}else if (isset($_GET['vote'])) { 
+echo "<p style='color:red;'>Invalid login credentials.</p>";
+    }
 
 // Handle deleting ideas/comments
 if (isset($_GET['delete_idea']) && isset($_SESSION['user'])) {
